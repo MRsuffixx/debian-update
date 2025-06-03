@@ -484,7 +484,7 @@ Bu proje MIT Lisansı altında lisanslanmıştır - detaylar için [LICENSE](LIC
 
 ## ⭐ Star History / Yıldız Geçmişi
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/debian-upgrade-script&type=Date)](https://star-history.com/#yourusername/debian-upgrade-script&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/debian-upgrade-script&type=Date)](https://www.star-history.com/#MRsuffixx/debian-update&Date)
 
 ---
 
