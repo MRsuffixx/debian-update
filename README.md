@@ -462,9 +462,9 @@ MIRROR_URL="http://deb.debian.org/debian"
 
 ### 💬 **Get Help / Yardım Alın:**
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/yourusername/debian-upgrade-script/issues)
-- **💡 Discussions**: [GitHub Discussions](https://github.com/yourusername/debian-upgrade-script/discussions)
-- **📧 Email**: your.email@example.com
+- **🐛 Issues**: [GitHub Issues](https://github.com/MRsuffixx/debian-upgrade/issues)
+- **💡 Discussions**: [GitHub Discussions](https://github.com/MRsuffixx/debian-upgrade/discussions)
+- **📧 Email**: mrsuffix@olnk.tr
 
 ### 🌐 **Useful Links / Yararlı Bağlantılar:**
 
@@ -488,7 +488,7 @@ Bu proje MIT Lisansı altında lisanslanmıştır - detaylar için [LICENSE](LIC
 
 ---
 
-**🎉 Made with ❤️ by [Your Name](https://github.com/yourusername)**
+**🎉 Made with ❤️ by [MRsuffixx](https://github.com/MRsuffixx)**
 
 ---
 
