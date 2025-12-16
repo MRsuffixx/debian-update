@@ -97,7 +97,7 @@ ps aux | grep -E "(apt|dpkg)" | grep -v grep
 
 ```bash
 # Download the script / Scripti indirin
-wget https://raw.githubusercontent.com/yourusername/debian-upgrade-script/main/debian-upgrade.sh
+wget https://raw.githubusercontent.com/MRsuffixx/debian-update/main/debian-upgrade.sh
 
 # Make it executable / Çalıştırılabilir yapın
 chmod +x debian-upgrade.sh
@@ -111,10 +111,10 @@ sudo ./debian-upgrade.sh
 #### **Method 1: Git Clone / Git ile Klonlama**
 ```bash
 # Clone repository / Depoyu klonlayın
-git clone https://github.com/yourusername/debian-upgrade-script.git
+git clone https://github.com/MRsuffixx/debian-update.git
 
 # Navigate to directory / Dizine gidin
-cd debian-upgrade-script
+cd debian-update
 
 # Make executable / Çalıştırılabilir yapın
 chmod +x debian-upgrade.sh
@@ -129,7 +129,7 @@ sudo ./debian-upgrade.sh
 mkdir ~/debian-upgrade && cd ~/debian-upgrade
 
 # Download with curl / curl ile indirin
-curl -O https://raw.githubusercontent.com/yourusername/debian-upgrade-script/main/debian-upgrade.sh
+curl -O https://raw.githubusercontent.com/MRsuffixx/debian-update/main/debian-upgrade.sh
 
 # Set permissions / İzinleri ayarlayın
 chmod +x debian-upgrade.sh
@@ -484,7 +484,7 @@ Bu proje MIT Lisansı altında lisanslanmıştır - detaylar için [LICENSE](LIC
 
 ## ⭐ Star History / Yıldız Geçmişi
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/debian-upgrade-script&type=Date)](https://www.star-history.com/#MRsuffixx/debian-update&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=MRsuffixx/debian-update&type=Date)](https://www.star-history.com/#MRsuffixx/debian-update&Date)
 
 ---
 
