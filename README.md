@@ -1,498 +1,368 @@
-# 🚀 Debian Version Upgrade Script / Debian Sürüm Yükseltme Scripti
+<div align="center">
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Debian](https://img.shields.io/badge/Debian-9%20to%2012-red.svg)](https://www.debian.org/)
-[![Shell Script](https://img.shields.io/badge/Shell-Bash-green.svg)](https://www.gnu.org/software/bash/)
+# 🚀 Debian Upgrade Manager
 
-## 🌟 Overview / Genel Bakış
+### Debian sürüm yükseltmeleri için kontrollü, yedeklemeli ve denetlenebilir Bash aracı
 
-**English**: This script provides a safe and automated way to upgrade Debian systems from version 9 to 12. It handles all the necessary steps including repository updates, package management, and system checks.
+**v3.0.0** · **Debian 11 → 12 → 13** · **Bash 5+** · **MIT**
 
-**Türkçe**: Bu script, Debian sistemlerini 9. sürümden 12. sürüme kadar güvenli ve otomatik bir şekilde yükseltmenizi sağlar. Depo güncellemeleri, paket yönetimi ve sistem kontrollerini içeren tüm gerekli adımları yönetir.
+[![Shellcheck](https://img.shields.io/badge/ShellCheck-enabled-4c1)](https://www.shellcheck.net/)
+[![Debian](https://img.shields.io/badge/Debian-11%20%7C%2012%20%7C%2013-A81D33?logo=debian&logoColor=white)](https://www.debian.org/releases/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-MRsuffixx%2Fdebian--update-181717?logo=github)](https://github.com/MRsuffixx/debian-update)
 
----
+[Özellikler](#-özellikler) · [Kurulum](#-kurulum) · [Komutlar](#-komutlar) · [Güvenlik](#-güvenlik-modeli) · [Sorun Giderme](#-sorun-giderme) · [English](#-english-summary)
 
-## 📋 Table of Contents / İçindekiler
+</div>
 
-- [Features / Özellikler](#-features--özellikler)
-- [Supported Versions / Desteklenen Sürümler](#-supported-versions--desteklenen-sürümler)
-- [Prerequisites / Gereksinimler](#-prerequisites--gereksinimler)
-- [Installation / Kurulum](#-installation--kurulum)
-- [Usage / Kullanım](#-usage--kullanım)
-- [Safety Features / Güvenlik Özellikleri](#-safety-features--güvenlik-özellikleri)
-- [Troubleshooting / Sorun Giderme](#-troubleshooting--sorun-giderme)
-- [Contributing / Katkıda Bulunma](#-contributing--katkıda-bulunma)
-- [License / Lisans](#-license--lisans)
+> [!WARNING]
+> **Dağıtım yükseltmesi risklidir.** Bir VPS/VDS/sunucuyu yükseltmeden önce sağlayıcınız üzerinden **tam disk/VM snapshot'ı**, tercihen harici bir yedek, doğrulanmış kurtarma konsolu (VNC/KVM/rescue) ve bakım penceresi hazırlayın. Araç hiçbir sistemde kesintisiz veya hatasız yükseltme garantisi vermez. Oluşturduğu `tar.gz` yapılandırma arşivi **işletim sistemini geri alma mekanizması değildir**.
 
----
+## ✨ Özellikler
 
-## ✨ Features / Özellikler
+| Özellik | Açıklama |
+|---|---|
+| 🎯 Otomatik Debian tespiti | `/etc/os-release`, sürüm numarası, kod adı, mimari |
+| 🛡️ Ön kontroller | Debian kimliği, sıralı sürüm geçişi, root, dpkg, APT süreçleri, disk, DNS, SSH, hold, pinning, container/WSL |
+| 📦 Modern depo yönetimi | Debian'ın `deb822` biçimindeki `.sources` dosyalarını üretir; `Signed-By` keyring kullanır |
+| 🚫 Üçüncü taraf depo izolasyonu | Eski `.list` / `.sources` girdilerini arşivleyip yükseltme sırasında devre dışı bırakır |
+| 💾 Kritik yedekler | `/etc/apt`, SSH, ağ, systemd, fstab, dpkg durumu, paket manifestleri, SHA-256 |
+| 🧪 Gerçekçi dry-run | Geçici APT indeksleriyle hedef sürümün depo verilerini indirir ve *simülasyon* yapar |
+| 📊 Aşama/ilerleme | Renkli durum etiketleri, bölüm başlıkları ve APT'nin canlı işlem çıktıları |
+| 📝 Log ve rapor | `/var/log/debian-upgrade-manager/`, yedek klasörü altında işlem planları |
+| 🔄 Kurtarma odaklı durum | Aşamaların diske kaydı, `--resume`, güvenli koşullarda `--restore-sources` |
+| ⚡ Otomasyon | `--non-interactive --yes --accept-risk` ile konsol onaysız çalıştırma |
+| 🧹 Kontrollü temizlik | `autoremove` simülasyonu, isteğe bağlı gerçek uygulama ve `apt-get clean` |
+| 🧯 Paket korumaları | Belirli kritik paketlerin kaldırılmasını engeller, kaldırılacak paketlere sayı sınırı koyar |
+| 🔐 Yetki ve erişim | Root sahipliğinde `0600` log/state, `0700` yedek dizinleri, tek-instance kilidi |
+| 📴 Yeniden başlatma kontrolü | Asla kendi kendine `reboot` çağırmaz |
 
-### 🔧 **English Features:**
-- 🎯 **Automatic Version Detection**: Detects current Debian version automatically
-- 🛡️ **Safety Checks**: Validates system requirements before starting
-- 📦 **Repository Management**: Automatically updates sources.list for target version
-- 💾 **Backup System**: Creates automatic backups of critical files
-- 📊 **Progress Monitoring**: Real-time progress updates with colored output
-- 📝 **Detailed Logging**: Comprehensive logs for troubleshooting
-- 🔄 **Interactive Menu**: User-friendly selection interface
-- ⚡ **Non-interactive Mode**: Automated upgrade process
-- 🧹 **Cleanup**: Removes unnecessary packages after upgrade
+## 🧭 Desteklenen Debian sürümleri
 
-### 🔧 **Türkçe Özellikler:**
-- 🎯 **Otomatik Sürüm Tespiti**: Mevcut Debian sürümünü otomatik algılar
-- 🛡️ **Güvenlik Kontrolleri**: Başlamadan önce sistem gereksinimlerini doğrular
-- 📦 **Depo Yönetimi**: Hedef sürüm için sources.list'i otomatik günceller
-- 💾 **Yedekleme Sistemi**: Kritik dosyaların otomatik yedeklerini oluşturur
-- 📊 **İlerleme Takibi**: Renkli çıktı ile gerçek zamanlı ilerleme güncellemeleri
-- 📝 **Detaylı Log Tutma**: Sorun giderme için kapsamlı loglar
-- 🔄 **Etkileşimli Menü**: Kullanıcı dostu seçim arayüzü
-- ⚡ **Etkileşimsiz Mod**: Otomatik yükseltme süreci
-- 🧹 **Temizlik**: Yükseltme sonrası gereksiz paketleri kaldırır
+| Mevcut sistem | Hedef | Durum |
+|---|---|---|
+| Debian 11 **Bullseye** | Debian 12 **Bookworm** | ✅ Sıralı geçiş; çalışan güncelleme depoları gerekli |
+| Debian 12 **Bookworm** | Debian 13 **Trixie** | ✅ Sıralı geçiş |
+| Debian 13 **Trixie** | Debian 14 **Forky** | ⛔ Test sürümüne geçiş kapalı |
+| Debian 9/10 | Herhangi bir sürüm | ⛔ Bu sürümde desteklenmiyor |
+| Ubuntu, Kali, Linux Mint, Proxmox VE | Herhangi bir sürüm | ⛔ Desteklenmiyor |
+| Docker/LXC container, WSL | Herhangi bir sürüm | ⛔ Desteklenmiyor |
 
----
+**Neden doğrudan 11 → 13 yok?** Debian'ın yayınladığı ve belgelediği ana sürüm yükseltme yöntemi, önce bir sonraki kararlı sürüme geçmektir. Her geçiş ayrı tamamlanmalı, servisler kontrol edilmeli, yeniden başlatılmalı ve tekrar yedek alınmalıdır.
 
-## 🎯 Supported Versions / Desteklenen Sürümler
+Resmî belgeler: [Debian sürümleri](https://www.debian.org/releases/) · [12 / Bookworm yükseltme notları](https://www.debian.org/releases/bookworm/releasenotes) · [13 / Trixie yükseltme notları](https://www.debian.org/releases/trixie/release-notes/upgrading.en.html).
 
-| Current Version<br>Mevcut Sürüm | Available Upgrades<br>Mevcut Yükseltmeler |
-|:---:|:---:|
-| 🔢 **Debian 9** (Stretch) | ➡️ 10, 11, 12 |
-| 🔢 **Debian 10** (Buster) | ➡️ 11, 12 |
-| 🔢 **Debian 11** (Bullseye) | ➡️ 12 |
-| ✅ **Debian 12** (Bookworm) | Already Updated / Zaten Güncel |
+## 🧩 Sistem gereksinimleri
 
----
+- Debian 11 veya 12, root/sudo erişimi, `apt-get`, `dpkg`, `dpkg-query`, `apt-mark`, `tar`, `flock`, `sha256sum`, `getent` ve standart GNU araçları.
+- Çalışan bir DNS/ağ bağlantısı ve Debian APT depolarına erişim.
+- **En az yaklaşık 2 GiB `/`, 3 GiB `/var`** boş alan (aynı dosya sistemiyse bu değerler bağımsız boş alan bütçeleri değildir). Ayrı bağlı `/boot` için **256 MiB**. Bunlar yalnızca *başlangıç eşikleri*; gerçek ihtiyaç daha fazla olabilir.
+- Özellikle VDS/VPS ortamlarında sağlayıcı **snapshot + kurtarma konsolu**, yeterli bakım süresi, kritik uygulamaların harici yedekleri.
+- SSH oturumunda `tmux` veya `screen` kullanılması önerilir; SSH'dan çalıştırmak ayrıca `--allow-ssh` gerektirir.
+- APT/dpkg kilidi kullanan başka işlem bulunmamalı; `dpkg --audit` temiz olmalı. Pinning ve hold olan sistemler varsayılan olarak durdurulur.
 
-## ⚙️ Prerequisites / Gereksinimler
+> [!IMPORTANT]
+> Docker, Coolify, Pterodactyl, PostgreSQL, MySQL/MariaDB, Mailcow, özel kernel, cloud-init, NVIDIA sürücüsü veya özel depo kullanan makinelerde ilgili ürünlerin Debian 13 uyumluluk notlarını **ayrıca okuyun**. Bu araç uygulama/veritabanı yedeği almaz, üçüncü taraf depolarını kendiliğinden yeniden etkinleştirmez.
 
-### 📋 **System Requirements / Sistem Gereksinimleri:**
+## 📥 Kurulum
 
-- 🐧 **Operating System / İşletim Sistemi**: Debian 9, 10, 11
-- 👤 **User Privileges / Kullanıcı Yetkileri**: Root access / Root erişimi
-- 💽 **Free Disk Space / Boş Disk Alanı**: Minimum 2GB
-- 🌐 **Internet Connection / İnternet Bağlantısı**: Required / Gerekli
-- 🔧 **Package Manager / Paket Yöneticisi**: No other package managers running / Başka paket yöneticisi çalışmamalı
-
-### 🔍 **Check Your System / Sisteminizi Kontrol Edin:**
+### 1. Git (önerilen)
 
 ```bash
-# Check Debian version / Debian sürümünü kontrol edin
-cat /etc/debian_version
-
-# Check available disk space / Mevcut disk alanını kontrol edin
-df -h /
-
-# Check internet connectivity / İnternet bağlantısını kontrol edin
-ping -c 3 deb.debian.org
-
-# Check running package managers / Çalışan paket yöneticilerini kontrol edin
-ps aux | grep -E "(apt|dpkg)" | grep -v grep
-```
-
----
-
-## 📥 Installation / Kurulum
-
-### 🚀 **Quick Install / Hızlı Kurulum:**
-
-```bash
-# Download the script / Scripti indirin
-wget https://raw.githubusercontent.com/MRsuffixx/debian-update/main/debian-upgrade.sh
-
-# Make it executable / Çalıştırılabilir yapın
-chmod +x debian-upgrade.sh
-
-# Run with root privileges / Root yetkileri ile çalıştırın
-sudo ./debian-upgrade.sh
-```
-
-### 🔄 **Alternative Methods / Alternatif Yöntemler:**
-
-#### **Method 1: Git Clone / Git ile Klonlama**
-```bash
-# Clone repository / Depoyu klonlayın
 git clone https://github.com/MRsuffixx/debian-update.git
-
-# Navigate to directory / Dizine gidin
 cd debian-update
-
-# Make executable / Çalıştırılabilir yapın
 chmod +x debian-upgrade.sh
-
-# Run script / Scripti çalıştırın
-sudo ./debian-upgrade.sh
-```
-
-#### **Method 2: Manual Download / Manuel İndirme**
-```bash
-# Create directory / Dizin oluşturun
-mkdir ~/debian-upgrade && cd ~/debian-upgrade
-
-# Download with curl / curl ile indirin
-curl -O https://raw.githubusercontent.com/MRsuffixx/debian-update/main/debian-upgrade.sh
-
-# Set permissions / İzinleri ayarlayın
-chmod +x debian-upgrade.sh
-
-# Execute / Çalıştırın
-sudo ./debian-upgrade.sh
-```
-
----
-
-## 🎮 Usage / Kullanım
-
-### 🖥️ **Interactive Mode / Etkileşimli Mod:**
-
-```bash
-# Run the script / Scripti çalıştırın
-sudo ./debian-upgrade.sh
-```
-
-**Example Output / Örnek Çıktı:**
-```
-===========================================
-    Debian Sürüm Yükseltme Scripti
-===========================================
-
-Mevcut sürüm: Debian 10
-
-Yükseltme seçenekleri:
-1. Debian 11'e yükselt
-2. Debian 12'e yükselt
-0. Çıkış
-
-Seçiminizi yapın (0-2): 
-```
-
-### 📋 **Step-by-Step Process / Adım Adım Süreç:**
-
-1. **🔍 System Detection / Sistem Tespiti**
-   ```
-   [2024-06-03 10:30:15] Sistem kontrolleri başlatılıyor...
-   [2024-06-03 10:30:16] Debian 10 tespit edildi
-   ```
-
-2. **✅ Pre-upgrade Checks / Yükseltme Öncesi Kontroller**
-   ```
-   [BİLGİ] Disk alanı kontrolü: ✅ Yeterli alan mevcut
-   [BİLGİ] İnternet bağlantısı: ✅ Bağlantı başarılı
-   [BİLGİ] Paket yöneticisi: ✅ Başka process çalışmıyor
-   ```
-
-3. **💾 Backup Creation / Yedek Oluşturma**
-   ```
-   [2024-06-03 10:30:20] Sources.list yedeklendi: /etc/apt/sources.list.backup-20240603-103020
-   ```
-
-4. **🔄 Repository Update / Depo Güncellemesi**
-   ```
-   [2024-06-03 10:30:25] Sources.list güncellendi (Debian 11)
-   [2024-06-03 10:30:30] Paket listeleri güncelleniyor...
-   ```
-
-5. **📦 Package Upgrade / Paket Yükseltmesi**
-   ```
-   [2024-06-03 10:35:45] Minimal upgrade yapılıyor...
-   [2024-06-03 10:45:20] Tam dağıtım yükseltmesi yapılıyor...
-   ```
-
-6. **🧹 Cleanup / Temizlik**
-   ```
-   [2024-06-03 11:15:30] Gereksiz paketler temizleniyor...
-   [2024-06-03 11:16:45] Debian 11 yükseltmesi tamamlandı!
-   ```
-
----
-
-## 🛡️ Safety Features / Güvenlik Özellikleri
-
-### 🔒 **Built-in Protections / Yerleşik Korumalar:**
-
-- **🔐 Root Check / Root Kontrolü**: Ensures script runs with proper privileges / Scriptin uygun yetkilerle çalıştığından emin olur
-- **💾 Automatic Backup / Otomatik Yedekleme**: Creates timestamped backups / Zaman damgalı yedekler oluşturur
-- **🌐 Connectivity Verification / Bağlantı Doğrulama**: Tests repository access / Depo erişimini test eder
-- **💽 Space Validation / Alan Doğrulama**: Ensures sufficient disk space / Yeterli disk alanından emin olur
-- **⚠️ Conflict Resolution / Çakışma Çözümü**: Handles package conflicts automatically / Paket çakışmalarını otomatik çözer
-
-### 📋 **Backup Files / Yedek Dosyalar:**
-
-```bash
-# View backup files / Yedek dosyaları görüntüleyin
-ls -la /etc/apt/sources.list.backup-*
-
-# Restore from backup if needed / Gerekirse yedekten geri yükleyin
-sudo cp /etc/apt/sources.list.backup-YYYYMMDD-HHMMSS /etc/apt/sources.list
-```
-
-### 📝 **Log Files / Log Dosyaları:**
-
-```bash
-# View recent logs / Son logları görüntüleyin
-sudo tail -f /var/log/debian-upgrade-*.log
-
-# Search for errors / Hataları arayın
-sudo grep -i "error\|fail" /var/log/debian-upgrade-*.log
-```
-
----
-
-## 🔧 Troubleshooting / Sorun Giderme
-
-### ❌ **Common Issues / Yaygın Sorunlar:**
-
-#### **🚫 Permission Denied / İzin Reddedildi**
-```bash
-# Problem / Sorun:
-bash: ./debian-upgrade.sh: Permission denied
-
-# Solution / Çözüm:
-chmod +x debian-upgrade.sh
-sudo ./debian-upgrade.sh
-```
-
-#### **🌐 Network Issues / Ağ Sorunları**
-```bash
-# Problem / Sorun:
-Could not resolve 'deb.debian.org'
-
-# Solution / Çözüm:
-# Check DNS settings / DNS ayarlarını kontrol edin
-cat /etc/resolv.conf
-
-# Test connectivity / Bağlantıyı test edin
-ping 8.8.8.8
-```
-
-#### **💽 Insufficient Space / Yetersiz Alan**
-```bash
-# Problem / Sorun:
-Yetersiz disk alanı! En az 2GB boş alan gerekli.
-
-# Solution / Çözüm:
-# Clean package cache / Paket önbelleğini temizleyin
-sudo apt clean
-sudo apt autoremove
-
-# Remove unnecessary files / Gereksiz dosyaları kaldırın
-sudo find /tmp -type f -atime +7 -delete
-```
-
-#### **🔒 Package Manager Lock / Paket Yöneticisi Kilidi**
-```bash
-# Problem / Sorun:
-Another package manager is running
-
-# Solution / Çözüm:
-# Wait for other processes to finish or kill them
-sudo killall apt apt-get dpkg
-sudo rm /var/lib/apt/lists/lock
-sudo rm /var/cache/apt/archives/lock
-sudo rm /var/lib/dpkg/lock*
-```
-
-### 🔄 **Recovery Steps / Kurtarma Adımları:**
-
-#### **1. Restore Backup / Yedekten Geri Yükleme**
-```bash
-# List available backups / Mevcut yedekleri listeleyin
-ls -la /etc/apt/sources.list.backup-*
-
-# Restore sources.list / sources.list'i geri yükleyin
-sudo cp /etc/apt/sources.list.backup-YYYYMMDD-HHMMSS /etc/apt/sources.list
-
-# Update package lists / Paket listelerini güncelleyin
-sudo apt update
-```
-
-#### **2. Fix Broken Packages / Bozuk Paketleri Düzeltin**
-```bash
-# Fix broken dependencies / Bozuk bağımlılıkları düzeltin
-sudo apt --fix-broken install
-
-# Reconfigure packages / Paketleri yeniden yapılandırın
-sudo dpkg --configure -a
-
-# Clean package cache / Paket önbelleğini temizleyin
-sudo apt clean && sudo apt update
-```
-
-#### **3. Emergency Recovery / Acil Durum Kurtarması**
-```bash
-# Boot into recovery mode and run / Kurtarma modunda açın ve çalıştırın:
-sudo apt update --fix-missing
-sudo apt full-upgrade --fix-missing
-sudo apt autoremove
-```
-
----
-
-## 📊 Advanced Usage / Gelişmiş Kullanım
-
-### 🎛️ **Command Line Options / Komut Satırı Seçenekleri:**
-
-```bash
-# View help / Yardımı görüntüleyin
 ./debian-upgrade.sh --help
-
-# Check version only / Sadece sürümü kontrol edin
-./debian-upgrade.sh --version-check
-
-# Dry run (simulation) / Deneme çalıştırması (simülasyon)
-./debian-upgrade.sh --dry-run
-
-# Force upgrade without prompts / Sorular olmadan zorla yükselt
-./debian-upgrade.sh --force --target=12
+sudo ./debian-upgrade.sh --check
 ```
 
-### 📝 **Custom Configuration / Özel Yapılandırma:**
-
-Create a configuration file / Yapılandırma dosyası oluşturun:
-```bash
-# Create config file / Yapılandırma dosyası oluşturun
-sudo nano /etc/debian-upgrade.conf
-```
+### 2. curl ile indirme
 
 ```bash
-# Configuration options / Yapılandırma seçenekleri
-BACKUP_DIR="/var/backups/debian-upgrade"
-LOG_LEVEL="verbose"
-AUTO_REBOOT="false"
-MIRROR_URL="http://deb.debian.org/debian"
+curl --fail --location --show-error --output debian-upgrade.sh \
+  https://raw.githubusercontent.com/MRsuffixx/debian-update/main/debian-upgrade.sh
+
+# İndirilen kodu çalıştırmadan önce inceleyin.
+less debian-upgrade.sh
+bash -n debian-upgrade.sh
+chmod +x debian-upgrade.sh
+sudo ./debian-upgrade.sh --check
 ```
 
----
-
-## 🤝 Contributing / Katkıda Bulunma
-
-### 🌟 **How to Contribute / Nasıl Katkıda Bulunursunuz:**
-
-1. **🍴 Fork the repository / Depoyu fork edin**
-2. **🔀 Create a feature branch / Özellik dalı oluşturun**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **💾 Commit your changes / Değişikliklerinizi commit edin**
-   ```bash
-   git commit -m 'Add amazing feature'
-   ```
-4. **📤 Push to the branch / Dalı push edin**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-5. **🔃 Open a Pull Request / Pull Request açın**
-
-### 🐛 **Bug Reports / Hata Raporları:**
-
-**English**: Please include the following information when reporting bugs:
-- Debian version
-- Error messages
-- Log files (`/var/log/debian-upgrade-*.log`)
-- Steps to reproduce
-
-**Türkçe**: Hata bildirirken lütfen şu bilgileri ekleyin:
-- Debian sürümü
-- Hata mesajları
-- Log dosyaları (`/var/log/debian-upgrade-*.log`)
-- Hatayı tekrar etme adımları
-
----
-
-## 📋 Testing / Test Etme
-
-### 🧪 **Test Environment / Test Ortamı:**
+### 3. wget ile indirme
 
 ```bash
-# Create test VM / Test VM oluşturun
-# Recommended: VirtualBox or VMware with Debian 9/10/11
+wget -O debian-upgrade.sh \
+  https://raw.githubusercontent.com/MRsuffixx/debian-update/main/debian-upgrade.sh
 
-# Test on different systems / Farklı sistemlerde test edin:
-# - Debian 9 (Stretch)
-# - Debian 10 (Buster) 
-# - Debian 11 (Bullseye)
-
-# Run comprehensive tests / Kapsamlı testler çalıştırın
-./run-tests.sh
+less debian-upgrade.sh
+bash -n debian-upgrade.sh
+chmod +x debian-upgrade.sh
+sudo ./debian-upgrade.sh --check
 ```
 
-### ✅ **Automated Testing / Otomatik Test:**
+> **Önemli:** Bu komutlar, güncellenmiş `debian-upgrade.sh` dosyası `main` dalına **yüklendikten sonra** yeni sürümü indirecektir. Kod güvenliği açısından doğrudan `curl | sudo bash` ya da `wget -O- | bash` önerilmez. Mümkünse belirli bir sürüm etiketi/commit'e sabitleyin ve checksum doğrulayın. Rastgele indirilen script'i root olarak çalıştırmayın.
+
+## 🎮 İnteraktif kullanım
 
 ```bash
-# Unit tests / Birim testler
-./tests/unit-tests.sh
-
-# Integration tests / Entegrasyon testleri
-./tests/integration-tests.sh
-
-# Performance tests / Performans testleri
-./tests/performance-tests.sh
+sudo ./debian-upgrade.sh
 ```
 
----
+```text
+════════════════════════════════════════════════════════════
+  Debian Upgrade Manager 3.0.0
+════════════════════════════════════════════════════════════
+  1) Preflight checks / Sistem kontrolü
+  2) Dry-run / Simülasyon
+  3) Upgrade / Sürüm yükselt
+  4) Backup only / Sadece yedek
+  5) Status / Durum
+  6) Resume / Devam et
+  7) Restore sources / APT depolarını geri yükle
+  8) Cleanup / Temizlik
+  0) Exit / Çıkış
+  Seçiminiz:
+```
 
-## 📈 Changelog / Değişiklik Günlüğü
+`3` seçilirse hedef sürüm belirlenir, kontroller yürütülür ve kullanıcıdan **`YUKSELT`** yazması istenir. Bu onay; mevcut disk snapshot'ını, geri dönüş ve konsol erişimini doğrulama sorumluluğunu kullanıcıya bırakır.
 
-### **v2.0.0** (2024-06-03)
-- ✨ Added support for Debian 12 (Bookworm)
-- 🛡️ Enhanced security checks
-- 📊 Improved progress monitoring
-- 🐛 Fixed repository detection issues
+## 💻 Komutlar
 
-### **v1.5.0** (2024-05-15)
-- 🎯 Added automatic version detection
-- 💾 Implemented backup system
-- 📝 Enhanced logging capabilities
+| Komut | İşlem | Sistem paketlerini değiştirir mi? |
+|---|---|---|
+| `sudo ./debian-upgrade.sh --check` | Ön kontroller | Hayır |
+| `sudo ./debian-upgrade.sh --dry-run` | İzole APT indeksleri + yükseltme simülasyonu | Hayır; ağ ve geçici disk kullanır |
+| `sudo ./debian-upgrade.sh --backup-only` | Kritik yapılandırma yedekleri | Paketleri değiştirmez |
+| `sudo ./debian-upgrade.sh --upgrade` | Gerçek sürüm yükseltmesi | **Evet** |
+| `sudo ./debian-upgrade.sh --resume` | Yarım kalan yükseltmeyi sürdürür | **Evet** |
+| `sudo ./debian-upgrade.sh --restore-sources` | Paket yükseltmesi başlamadan önce eski APT dosyalarını geri getirir | Depo ayarlarını değiştirir |
+| `sudo ./debian-upgrade.sh --cleanup` | Önizleme + onayla `autoremove`/`clean` | **Evet** |
+| `sudo ./debian-upgrade.sh --status` | İşlem durumu | Hayır |
+| `./debian-upgrade.sh --version` | Sürüm bilgisi | Hayır |
 
-### **v1.0.0** (2024-04-01)
-- 🚀 Initial release
-- 📦 Basic upgrade functionality
-- 🔧 Interactive menu system
+### Hedef sürüm ve depo bileşenleri
 
----
+```bash
+# Debian 12 üzerinde yalnızca 13/Trixie geçerlidir.
+sudo ./debian-upgrade.sh --upgrade --target trixie
 
-## 🏆 Acknowledgments / Teşekkürler
+# Gerekirse açık bileşen listesi:
+sudo ./debian-upgrade.sh --upgrade \
+  --components main,contrib,non-free,non-free-firmware
+```
 
-- **🐧 Debian Project**: For the amazing operating system
-- **👥 Community**: For testing and feedback
-- **🔧 Contributors**: Everyone who helped improve this script
+Aracın varsayılan bileşenleri `main non-free-firmware`; mevcut etkin kaynaklarda `contrib` / `non-free` varsa onları da korumaya çalışır. Değişiklik öncesi yapılandırmayı mutlaka inceleyin.
 
----
+### SSH / VDS senaryosu
 
-## 📞 Support / Destek
+```bash
+# Sunucuda tmux kullanın; out-of-band rescue konsolunu da hazır tutun.
+tmux new -s debian-upgrade
 
-### 💬 **Get Help / Yardım Alın:**
+sudo ./debian-upgrade.sh --check --allow-ssh
+sudo ./debian-upgrade.sh --dry-run --allow-ssh
+sudo ./debian-upgrade.sh --upgrade --allow-ssh
 
-- **🐛 Issues**: [GitHub Issues](https://github.com/MRsuffixx/debian-upgrade/issues)
-- **💡 Discussions**: [GitHub Discussions](https://github.com/MRsuffixx/debian-upgrade/discussions)
-- **📧 Email**: mrsuffix@olnk.tr
+# SSH düşerse, yeniden bağlanıp:
+tmux attach -t debian-upgrade
+```
 
-### 🌐 **Useful Links / Yararlı Bağlantılar:**
+`--allow-ssh` SSH bağlantısının kopmasını **engellemez**, yalnızca bu riskin bilindiğini belirtir.
 
-- [📚 Debian Documentation](https://www.debian.org/doc/)
-- [🔧 Debian Administrator's Handbook](https://debian-handbook.info/)
-- [📋 Debian Release Notes](https://www.debian.org/releases/)
+### ⚡ Etkileşimsiz yükseltme
 
----
+```bash
+sudo ./debian-upgrade.sh \
+  --upgrade \
+  --non-interactive \
+  --yes \
+  --accept-risk \
+  --allow-ssh \
+  --auto-clean
+```
 
-## 📄 License / Lisans
+Bu örnek **paket silme planı yoksa** kendiliğinden devam eder. APT kaldırılacak paket önerirse `--allow-removals` gerektirir (varsayılan üst sınır **10**); kritik paket silinmesi her durumda engellenir.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+```bash
+# Yalnızca bağımlılık ve silme planını önceden incelediyseniz:
+sudo ./debian-upgrade.sh \
+  --upgrade --non-interactive --yes --accept-risk \
+  --allow-ssh --allow-removals --max-removals 5 --auto-clean
+```
 
-Bu proje MIT Lisansı altında lisanslanmıştır - detaylar için [LICENSE](LICENSE) dosyasına bakın.
+`--allow-holds` veya `--allow-pinning` ancak riskleri değerlendirildikten sonra kullanılmalı. Etkileşimsiz APT yapılandırmasında mevcut dosyaları korumaya öncelik verilir (`--force-confdef` / `--force-confold`); yine de her paket betiğinin hiçbir zaman kullanıcı girişi istemeyeceği **garanti değildir**. Servislerin davranışı da değişebilir. Mümkünse kritik sistemleri gözetimsiz yükseltmeyin.
 
----
+## 🧱 Yükseltme akışı
 
-## ⭐ Star History / Yıldız Geçmişi
+```mermaid
+flowchart TD
+    A[Debian sürümünü tespit et] --> B{Desteklenen ardışık geçiş?}
+    B -->|Hayır| X[İşlemi durdur]
+    B -->|Evet| C[Preflight kontrolleri]
+    C --> D[Snapshot ve risk onayı]
+    D --> E[Yedekleri ve paket manifestini oluştur]
+    E --> F[Mevcut Debian sürümünde apt update + upgrade]
+    F --> G[Eski APT kaynaklarını yedekle ve devre dışı bırak]
+    G --> H[Deb822 hedef kaynaklarını oluştur]
+    H --> I[Hedef sürüm paket indekslerini güncelle]
+    I --> J[Silme planını simüle et ve denetle]
+    J --> K[Minimal upgrade]
+    K --> L[Tam upgrade öncesi yeniden simülasyon]
+    L --> M[Full dist-upgrade]
+    M --> N[OS/dpkg/apt doğrulaması]
+    N --> O[Autoremove önizlemesi ve isteğe bağlı temizlik]
+    O --> P[Rapor, log ve manuel reboot]
+```
 
-[![Star History Chart](https://api.star-history.com/svg?repos=MRsuffixx/debian-update&type=Date)](https://www.star-history.com/#MRsuffixx/debian-update&Date)
+### Kayıtlı aşamalar
 
----
+`preparing` → `base-updated` → `sources-switched` → `target-index-updated` → `minimal-started` → `minimal-done` → `full-started` → `full-done` → `complete`.
 
-**🎉 Made with ❤️ by [MRsuffixx](https://github.com/MRsuffixx)**
+Kritik işlemlerden sonra durum atomik olarak diske yazılır. Beklenmeyen kesintiden sonra mümkünse ilk olarak `sudo ./debian-upgrade.sh --status`, sonra `--resume` kullanın. **Paket veritabanı bozuksa devam etmeden önce uzman müdahalesi gerekir.** Betik evrensel olarak hatasız devam/rollback garantisi vermez.
+
+## 🛡️ Güvenlik modeli
+
+**Koruyucu varsayılanlar:**
+
+1. Yalnızca Debian 11 → 12 ve 12 → 13; `testing`, `unstable`, sürüm atlama ve Debian türevleri reddedilir.
+2. `/etc/apt/sources.list` ve `/etc/apt/sources.list.d/` önce yedeklenir; üçüncü taraf kaynaklar yükseltme sırasında kapatılır.
+3. Paket kaldırma önerisi simüle edilir ve kritik paket silme talepleri durdurulur; izin verilmemiş yüksek sayıda silme engellenir.
+4. Paket yönetim kilitleri için hem araç kilidi hem de çalışan APT/dpkg işlemlerine karşı kontrol bulunur. Bu kontrol tam bir dağıtık kilitleme mekanizması değildir.
+5. Dosyalar hassas olabileceğinden log ve yedek dizin izinleri kısıtlanır.
+6. Debian paket imza doğrulaması etkin kalır; `[trusted=yes]`, `--allow-unauthenticated` gibi tehlikeli seçenekler kullanılmaz.
+7. Önceden alınan snapshot'ı varsayar; **otomatik rollback ve otomatik reboot yoktur**.
+
+> [!CAUTION]
+> `--accept-risk`, fiziksel/donanımsal veya sanallaştırma yedeği **oluşturmaz**. Yalnızca gerekli tedbirleri aldığınızı beyan eder. Çalışan servislerin durması, özel çekirdek/bootloader sorunları, platforma özgü kurulumlar ve paket betiklerinin etkileşim gerektirmesi yazılımla tamamen önlenemez.
+
+## 💾 Yedekler, loglar, gizlilik
+
+```text
+/var/backups/debian-upgrade-manager/
+└── 20261018T180000Z-1234/
+    ├── original-sources/
+    │   ├── sources.list
+    │   └── sources.list.d/
+    ├── disabled-sources/
+    ├── system-config.tar.gz
+    ├── dpkg-selections.txt
+    ├── packages.tsv
+    ├── apt-manual.txt
+    ├── apt-auto.txt
+    ├── apt-holds.txt
+    ├── system-info.txt
+    ├── pre-minimal-plan.txt
+    ├── full-upgrade-plan.txt
+    ├── autoremove-plan.txt
+    ├── SHA256SUMS
+    └── upgrade-report.txt
+
+/var/lib/debian-upgrade-manager/current.state
+/var/log/debian-upgrade-manager/YYYYMMDD-HHMMSS-PID.log
+```
+
+Arşivde SSH yapılandırmaları/anahtarları veya paket depo kimlik bilgileri bulunabilir. **GitHub'a, Discord'a veya herkese açık hata raporlarına bu arşivleri yüklemeyin.** Başarılı işlem sonrası `SHA256SUMS` ile arşiv bütünlüğünü kontrol edin:
+
+```bash
+cd /var/backups/debian-upgrade-manager/YEDEK_KLASORU
+sudo sha256sum -c SHA256SUMS
+```
+
+`tar.gz`, yalnızca seçili yapılandırma ve paket kayıtlarını içerir. Veritabanı dosyaları, kullanıcı dosyaları, uygulama durumları, disk bölümleme ve boot yapısı için ayrı yedek/snapshot şarttır.
+
+## 🧯 Sorun giderme
+
+### `dpkg was interrupted`, `dpkg --audit` başarısız
+
+```bash
+sudo dpkg --audit
+sudo dpkg --configure -a
+sudo apt-get -f install
+sudo ./debian-upgrade.sh --status
+```
+
+Yukarıdaki komutlar **paketleri değiştirebilir**. Bunları ancak konsol üzerinden durum incelemesi ve gereken müdahaleler sonrası çalıştırın. Ardından durum uygunsa:
+
+```bash
+sudo ./debian-upgrade.sh --resume --allow-ssh
+```
+
+### Hedef APT kaynaklarına erişim yoksa
+
+Kritik: Paket yükseltmesine **henüz başlanmadıysa**, aşağıdaki komut eski APT kaynaklarını geri yükleyebilir:
+
+```bash
+sudo ./debian-upgrade.sh --status
+sudo ./debian-upgrade.sh --restore-sources
+sudo apt-get update
+```
+
+`--restore-sources`, `minimal-started` ve sonrasında **bilinçli olarak kapatılmıştır**. Paketleri daha yeni Debian sürümüne taşıdıktan sonra eski sürümün depolarını tek başına geri getirmek sistemi bozabilir; bu durumda sağlayıcı snapshot'ından geri dönün veya Debian kurtarma belgelerini izleyin.
+
+### Üçüncü taraf programlar güncellenmiyor
+
+Bu beklenen davranıştır. Debian yükseltmesi bittikten sonra Docker/PostgreSQL/panel/ajan gibi yazılımların **yeni sürüme uygun** resmî depo yönergelerini uygulayın. `disabled-sources/` içerisindeki eski dosyaları otomatik kopyalamayın; yeni dağıtımın kod adı, anahtarı, imza ve sürüm uygunluğu ayrı ayrı doğrulanmalıdır.
+
+### Paketler kaldırılmak isteniyor
+
+```bash
+sudo ./debian-upgrade.sh --dry-run --allow-ssh
+sudo ./debian-upgrade.sh --status
+sudo ls -la /var/backups/debian-upgrade-manager/
+```
+
+Ayrıntılı kaldırma planları ilgili yedek klasöründeki `pre-minimal-plan.txt` ve `full-upgrade-plan.txt` dosyalarına yazılır. Tehlikeli kaldırmaları **`--max-removals` değerini yükselterek geçiştirmeyin**; önce paketlerin neden kaldırıldığını anlayın.
+
+### İşlem sonunda kontrol
+
+```bash
+cat /etc/os-release
+sudo dpkg --audit
+sudo apt-get check
+systemctl --failed
+uname -r
+sudo reboot  # YALNIZCA servis/konsol kontrolünden sonra
+```
+
+Çekirdeğin yeni sürümünü görebilmek için genellikle yeniden başlatma gerekir. Bu araç reboot yapmaz.
+
+## 🧪 Geliştirme ve kalite
+
+```bash
+bash -n debian-upgrade.sh
+shellcheck -S warning debian-upgrade.sh
+bash tests/test-cli.sh
+```
+
+CI taslağı: `.github/workflows/ci.yml`. İkinci aşama için Debian 11/12 VM snapshot'ları üzerinde uçtan uca test yapılması önerilir. Yalnızca statik testler **başarılı bir gerçek OS yükseltmesini kanıtlamaz**.
+
+### Katkı
+
+Hata raporlarında işletim sistemi sürümünü, komutu, hangi aşamada kalındığını ve hassas bilgi içermeyen anonimleştirilmiş log kesitlerini paylaşın. PR'larda ShellCheck ve CLI testleri çalıştırın. Özellikle farklı mimariler ve sağlayıcı ağ/boot yapılandırmalarındaki sonuçlar değerlidir.
+
+## 🌍 English summary
+
+**Debian Upgrade Manager** is a defensive Bash release-upgrade workflow for the explicitly supported transitions **Debian 11 → 12** and **Debian 12 → 13**. It offers preflight checks, isolated `--dry-run`, deb822 repository management, private configuration backups, resumable checkpoints, package-removal guards, interactive/noninteractive operation, verbose logs, and opt-in cleanup.
+
+It does **not** promise zero downtime, unattended safety, universal hardware compatibility, full OS backup, automated rollback, or automatic reboot. **Take a verified snapshot and read official Debian release notes before using it on any production machine.** Third-party repositories are disabled during the transition and require manual compatibility review afterward.
+
+Example:
+
+```bash
+sudo ./debian-upgrade.sh --check
+sudo ./debian-upgrade.sh --dry-run
+sudo ./debian-upgrade.sh --upgrade
+```
+
+## 📄 Lisans
+
+[MIT License](LICENSE) · Proje sahibi: **MRsuffixx** · [GitHub deposu](https://github.com/MRsuffixx/debian-update)
 
 ---
 
 <div align="center">
-  <p><b>🌟 If this project helped you, please give it a star! ⭐</b></p>
-  <p><b>🌟 Bu proje size yardımcı olduysa, lütfen yıldız verin! ⭐</b></p>
+
+**Yükseltmeden önce snapshot al. Planı incele. Kontrollü ilerle.**
+
 </div>
